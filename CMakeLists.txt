@@ -123,14 +123,8 @@ include(${PDAL_CMAKE_DIR}/libxml2.cmake)
 include(${PDAL_CMAKE_DIR}/dimension.cmake)
 include(${PDAL_CMAKE_DIR}/arbiter.cmake)
 include(${PDAL_CMAKE_DIR}/nlohmann.cmake)
+include(${PDAL_CMAKE_DIR}/openmp.cmake)
 include(${PDAL_CMAKE_DIR}/openssl.cmake) # Optional
-
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
 
 #------------------------------------------------------------------------------
 # generate the pdal_features.hpp header
