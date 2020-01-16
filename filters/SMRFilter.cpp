@@ -63,23 +63,19 @@ namespace pdal
 using namespace Dimension;
 using namespace Eigen;
 
-static StaticPluginInfo const s_info
-{
-    "filters.smrf",
-    "Simple Morphological Filter (Pingel et al., 2013)",
-    "http://pdal.io/stages/filters.smrf.html"
-};
+static StaticPluginInfo const s_info{
+    "filters.smrf", "Simple Morphological Filter (Pingel et al., 2013)",
+    "http://pdal.io/stages/filters.smrf.html"};
 
 // Without the cast, MSVC complains, which is ridiculous when the output
 // is, by definition, an int.
 namespace
 {
-template<typename T>
-T ceil(double d)
+template <typename T> T ceil(double d)
 {
     return static_cast<T>(std::ceil(d));
 }
-}
+} // namespace
 
 CREATE_STATIC_STAGE(SMRFilter, s_info)
 
@@ -94,13 +90,12 @@ struct SMRArgs
     std::string m_dir;
     std::vector<DimRange> m_ignored;
     StringList m_returns;
+    bool m_allowSynthetic;
 };
 
-SMRFilter::SMRFilter() : m_args(new SMRArgs)
-{}
+SMRFilter::SMRFilter() : m_args(new SMRArgs) {}
 
-SMRFilter::~SMRFilter()
-{}
+SMRFilter::~SMRFilter() {}
 
 std::string SMRFilter::getName() const
 {
@@ -119,6 +114,8 @@ void SMRFilter::addArgs(ProgramArgs& args)
     args.add("ignore", "Ignore values", m_args->m_ignored);
     args.add("returns", "Include last returns?", m_args->m_returns,
              {"last", "only"});
+    args.add("synthetic", "Allow synthetic returns?", m_args->m_allowSynthetic,
+             true);
 }
 
 void SMRFilter::addDimensions(PointLayoutPtr layout)
@@ -185,17 +182,22 @@ PointViewSet SMRFilter::run(PointViewPtr view)
         Segmentation::ignoreDimRanges(m_args->m_ignored, view, keptView,
                                       ignoredView);
 
+    PointViewPtr syntheticView = keptView->makeNew();
+    PointViewPtr realView = keptView->makeNew();
+    if (m_args->m_allowSynthetic)
+        realView->append(*keptView);
+    else
+        Segmentation::ignoreSynthetic(keptView, realView, syntheticView);
+
     // Check for 0's in ReturnNumber and NumberOfReturns
     bool nrOneZero(false);
     bool rnOneZero(false);
     bool nrAllZero(true);
     bool rnAllZero(true);
-    for (PointId i = 0; i < keptView->size(); ++i)
+    for (PointId i = 0; i < realView->size(); ++i)
     {
-        uint8_t nr =
-            keptView->getFieldAs<uint8_t>(Id::NumberOfReturns, i);
-        uint8_t rn =
-            keptView->getFieldAs<uint8_t>(Id::ReturnNumber, i);
+        uint8_t nr = realView->getFieldAs<uint8_t>(Id::NumberOfReturns, i);
+        uint8_t rn = realView->getFieldAs<uint8_t>(Id::ReturnNumber, i);
         if ((nr == 0) && !nrOneZero)
             nrOneZero = true;
         if ((rn == 0) && !rnOneZero)
@@ -212,18 +214,18 @@ PointViewSet SMRFilter::run(PointViewPtr view)
                    "1.");
 
     // Segment kept view into two views
-    PointViewPtr firstView = keptView->makeNew();
-    PointViewPtr secondView = keptView->makeNew();
+    PointViewPtr firstView = realView->makeNew();
+    PointViewPtr secondView = realView->makeNew();
     if (nrAllZero && rnAllZero)
     {
         log()->get(LogLevel::Warning)
             << "Both NumberOfReturns and ReturnNumber are filled with 0's. "
                "Proceeding without any further return filtering.\n";
-        firstView->append(*keptView);
+        firstView->append(*realView);
     }
     else
     {
-        Segmentation::segmentReturns(keptView, firstView, secondView,
+        Segmentation::segmentReturns(realView, firstView, secondView,
                                      m_args->m_returns);
     }
 
@@ -271,6 +273,7 @@ PointViewSet SMRFilter::run(PointViewPtr view)
     classifyGround(firstView, ZIpro);
 
     PointViewPtr outView = view->makeNew();
+    outView->append(*syntheticView);
     outView->append(*ignoredView);
     outView->append(*secondView);
     outView->append(*firstView);

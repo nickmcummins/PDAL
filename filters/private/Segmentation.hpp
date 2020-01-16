@@ -70,8 +70,11 @@ PDAL_DLL std::vector<PointIdList> extractClusters(PointView& view,
 
 PDAL_DLL void ignoreDimRange(DimRange dr, PointViewPtr input, PointViewPtr keep,
                              PointViewPtr ignore);
-PDAL_DLL void ignoreDimRanges(std::vector<DimRange>& ranges,
-    PointViewPtr input, PointViewPtr keep, PointViewPtr ignore);
+PDAL_DLL void ignoreDimRanges(std::vector<DimRange>& ranges, PointViewPtr input,
+                              PointViewPtr keep, PointViewPtr ignore);
+
+PDAL_DLL void ignoreSynthetic(PointViewPtr input, PointViewPtr keep,
+                              PointViewPtr ignore);
 
 PDAL_DLL void segmentLastReturns(PointViewPtr input, PointViewPtr last,
                                  PointViewPtr other);
