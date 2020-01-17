@@ -552,5 +552,5 @@ TEST(LasReaderTest, SyntheticPoints)
     PointViewSet viewSet = reader.execute(table);
     PointViewPtr outView = *viewSet.begin();
 
-    EXPECT_EQ(ClassLabel::CreatedNeverClassified | (1 << 5), outView->getFieldAs<uint8_t>(Id::Classification, 0));
+    EXPECT_EQ(ClassLabel::CreatedNeverClassified | ClassLabel::Synthetic, outView->getFieldAs<uint8_t>(Id::Classification, 0));
 }

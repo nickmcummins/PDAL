@@ -148,7 +148,7 @@ void ignoreSynthetic(PointViewPtr input, PointViewPtr keep, PointViewPtr ignore)
     for (PointId i = 0; i < input->size(); ++i)
     {
         uint8_t c = input->getFieldAs<uint8_t>(Id::Classification, i);
-        if (c & (1 << 5))
+        if (c & ClassLabel::Synthetic)
             ignore->appendPoint(*input, i);
         else
             keep->appendPoint(*input, i);
